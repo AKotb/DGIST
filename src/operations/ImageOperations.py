@@ -1,46 +1,54 @@
+from Tkinter import *
 from PyQt5.QtCore import QDir
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import (QFileDialog,
-                             QMainWindow, QMessageBox)
+from PyQt5.QtWidgets import (QFileDialog, QMainWindow, QMessageBox)
+from PIL import Image
 
 
 class ImageOperations(QMainWindow):
-
     def __init__(self):
         super(ImageOperations, self).__init__()
 
 
-def open(QMainWindow):
-    fileName, _ = QFileDialog.getOpenFileName(QMainWindow, "Open File",
-                                                  QDir.currentPath())
-    if fileName:
-        image = QImage(fileName)
-        if image.isNull():
-            QMessageBox.information(QMainWindow, "Image Viewer",
-                                        "Cannot load %s." % fileName)
+def open(self):
+    self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
+    #self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "C:/Users/ahmed.kotb/PycharmProjects/DGIST/resources")
+    if self.fileName:
+        self.image = QImage(self.fileName)
+        if self.image.isNull():
+            QMessageBox.information(self, "Image Viewer",
+                                    "Cannot load %s." % self.fileName)
             return
 
-        QMainWindow.imageLabel.setPixmap(QPixmap.fromImage(image))
-        QMainWindow.scaleFactor = 1.0
+        self.imageLabel.setPixmap(QPixmap.fromImage(self.image))
+        self.scaleFactor = 1.0
 
-        QMainWindow.saveAct.setEnabled(True)
-        QMainWindow.fitToWindowAct.setEnabled(True)
-        QMainWindow.metadataAct.setEnabled(True)
-        QMainWindow.histogramAct.setEnabled(True)
-        QMainWindow.changeDetectionAct.setEnabled(True)
-        QMainWindow.reportsAct.setEnabled(True)
-        QMainWindow.updateActions()
+        self.saveAct.setEnabled(True)
+        self.fitToWindowAct.setEnabled(True)
+        self.metadataAct.setEnabled(True)
+        self.histogramAct.setEnabled(True)
+        self.changeDetectionAct.setEnabled(True)
+        self.reportsAct.setEnabled(True)
+        self.updateActions()
 
-        if not QMainWindow.fitToWindowAct.isChecked():
-            QMainWindow.imageLabel.adjustSize()
+        if not self.fitToWindowAct.isChecked():
+            self.imageLabel.adjustSize()
 
 
 def save(QMainWindow):
     print "write save method code here"
 
 
-def metadata(QMainWindow):
-    print "write Metadata method code here"
+def metadata(self):
+    img = Image.open(self.fileName)
+    root = Tk()
+    root.title("Image Metadata")
+    root.geometry("500x600")
+    frame = Frame(root, bg="blue", width=500, height=600)
+    label = Label(frame, text=img)
+    frame.pack()
+    label.pack()
+    root.mainloop()
 
 
 def histogram(QMainWindow):
@@ -49,4 +57,3 @@ def histogram(QMainWindow):
 
 def changeDetection(QMainWindow):
     print "write Change Detection method code here"
-
