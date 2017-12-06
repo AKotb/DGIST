@@ -1,3 +1,5 @@
+import cv2
+from matplotlib import pyplot as plt
 from Tkinter import *
 from PyQt5.QtCore import QDir
 from PyQt5.QtGui import QImage, QPixmap
@@ -51,8 +53,10 @@ def metadata(self):
     root.mainloop()
 
 
-def histogram(QMainWindow):
-    print "write Histogram method code here"
+def histogram(self):
+    img = cv2.imread(self.fileName, 0)
+    plt.hist(img.ravel(), 256, [0, 256]);
+    plt.show()
 
 
 def changeDetection(QMainWindow):
