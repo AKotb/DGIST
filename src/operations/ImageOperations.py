@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 from matplotlib import pyplot as plt
 from Tkinter import *
 from PyQt5.QtCore import QDir
@@ -54,8 +55,12 @@ def metadata(self):
 
 
 def histogram(self):
-    img = cv2.imread(self.fileName, 0)
-    plt.hist(img.ravel(), 256, [0, 256]);
+    img = cv2.imread(self.fileName)
+    color = ('b', 'g', 'r')
+    for i, col in enumerate(color):
+        histr = cv2.calcHist([img], [i], None, [256], [0, 256])
+        plt.plot(histr, color=col)
+        plt.xlim([0, 256])
     plt.show()
 
 
