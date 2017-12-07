@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 from matplotlib import pyplot as plt
 from Tkinter import *
 from PyQt5.QtCore import QDir
@@ -38,12 +37,15 @@ def open(self):
             self.imageLabel.adjustSize()
 
 
-def save(QMainWindow):
-    print "write save method code here"
+def save(self):
+    filename = QFileDialog.getSaveFileName(self, "Save Image", QDir.currentPath())[0]
+    img = cv2.imread(self.fileName)
+    cv2.imwrite(filename, img)
 
 
 def metadata(self):
     img = Image.open(self.fileName)
+    print(img.getbands)
     root = Tk()
     root.title("Image Metadata")
     root.geometry("500x600")
