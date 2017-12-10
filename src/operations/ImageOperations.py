@@ -18,6 +18,7 @@ def open(self):
     if self.fileName:
         self.image = QImage(self.fileName)
         if self.image.isNull():
+            self.statusBar().showMessage('Image Viewer cannot load file.')
             QMessageBox.information(self, "Image Viewer",
                                     "Cannot load %s." % self.fileName)
             return
@@ -32,6 +33,7 @@ def open(self):
         self.changeDetectionAct.setEnabled(True)
         self.reportsAct.setEnabled(True)
         self.updateActions()
+        self.statusBar().showMessage('File loaded in Image Viewer.')
 
         if not self.fitToWindowAct.isChecked():
             self.imageLabel.adjustSize()
@@ -42,11 +44,13 @@ def save(self):
     filename = QFileDialog.getSaveFileName(self, "Save", "", "All Files (*);;TIF Image (*.tif);;PNG Image (*.png);;JPG Image (*.jpg);;Text Files (*.txt)")[0]
     img = cv2.imread(self.fileName)
     cv2.imwrite(filename, img)
+    self.statusBar().showMessage('Image saved into ' + filename)
 
 
 def metadata(self):
     img = Image.open(self.fileName)
     print(img.getbands)
+    self.statusBar().showMessage('Metadata generated.')
     root = Tk()
     root.title("Image Metadata")
     root.geometry("500x600")
@@ -58,6 +62,7 @@ def metadata(self):
 
 
 def histogram(self):
+    self.statusBar().showMessage('Histogram generated.')
     img = cv2.imread(self.fileName)
     color = ('b', 'g', 'r')
     for i, col in enumerate(color):

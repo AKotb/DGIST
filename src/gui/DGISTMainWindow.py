@@ -23,6 +23,7 @@ class DGISTMainWindow(QMainWindow):
         self.createActions()
         self.createMenus()
 
+        self.statusBar().showMessage('Ready')
         self.setWindowTitle("DGIST")
         self.resize(500, 400)
 
@@ -36,16 +37,20 @@ class DGISTMainWindow(QMainWindow):
         ImageOperations.save(self)
 
     def zoomIn(self):
+        self.statusBar().showMessage('Zooming in.')
         self.scaleImage(1.25)
 
     def zoomOut(self):
+        self.statusBar().showMessage('Zooming out.')
         self.scaleImage(0.8)
 
     def normalSize(self):
+        self.statusBar().showMessage('Reset to normal size.')
         self.imageLabel.adjustSize()
         self.scaleFactor = 1.0
 
     def fitToWindow(self):
+        self.statusBar().showMessage('Fitting to window size.')
         fitToWindow = self.fitToWindowAct.isChecked()
         self.scrollArea.setWidgetResizable(fitToWindow)
         if not fitToWindow:
