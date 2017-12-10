@@ -13,8 +13,8 @@ class ImageOperations(QMainWindow):
 
 
 def open(self):
-    self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
-    #self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "C:/Users/ahmed.kotb/PycharmProjects/DGIST/resources")
+    #self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
+    self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "C:/Users/ahmed.kotb/PycharmProjects/DGIST/resources")
     if self.fileName:
         self.image = QImage(self.fileName)
         if self.image.isNull():
@@ -38,7 +38,7 @@ def open(self):
 
 
 def save(self):
-    filename = QFileDialog.getSaveFileName(self, "Save Image", QDir.currentPath())[0]
+    filename = QFileDialog.getSaveFileName(self, "Save", "", "All Files (*);;TIF Image (*.tif);;PNG Image (*.png);;JPG Image (*.jpg);;Text Files (*.txt)")[0]
     img = cv2.imread(self.fileName)
     cv2.imwrite(filename, img)
 
@@ -66,5 +66,5 @@ def histogram(self):
     plt.show()
 
 
-def changeDetection(QMainWindow):
+def changeDetection(self):
     print "write Change Detection method code here"
