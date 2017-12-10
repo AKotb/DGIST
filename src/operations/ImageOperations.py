@@ -13,8 +13,8 @@ class ImageOperations(QMainWindow):
 
 
 def open(self):
-    #self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
-    self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "C:/Users/ahmed.kotb/PycharmProjects/DGIST/resources")
+    self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
+    #self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "C:/Users/ahmed.kotb/PycharmProjects/DGIST/resources")
     if self.fileName:
         self.image = QImage(self.fileName)
         if self.image.isNull():
