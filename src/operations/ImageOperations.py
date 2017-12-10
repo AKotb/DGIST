@@ -38,6 +38,7 @@ def open(self):
 
 
 def save(self):
+    # this is save method
     filename = QFileDialog.getSaveFileName(self, "Save", "", "All Files (*);;TIF Image (*.tif);;PNG Image (*.png);;JPG Image (*.jpg);;Text Files (*.txt)")[0]
     img = cv2.imread(self.fileName)
     cv2.imwrite(filename, img)
