@@ -86,29 +86,20 @@ class DGISTMainWindow(QMainWindow):
                                + ((factor - 1) * scrollBar.pageStep() / 2)))
 
     def createActions(self):
-        self.openAct = QAction("&Open...", self, shortcut="Ctrl+O",
-                               triggered=self.open)
-        self.saveAct = QAction("&Save...", self, shortcut="Ctrl+S",
-                                enabled=False, triggered=self.save_)
-        self.exitAct = QAction("E&xit", self, shortcut="Ctrl+Q",
-                               triggered=self.close)
+        self.openAct = QAction("&Open...", self, shortcut="Ctrl+O", triggered=self.open)
+        self.saveAct = QAction("&Save...", self, shortcut="Ctrl+S", enabled=False, triggered=self.save_)
+        self.exitAct = QAction("E&xit", self, shortcut="Ctrl+Q", triggered=self.close)
 
-        self.zoomInAct = QAction("Zoom &In (25%)", self, shortcut="Ctrl++",
-                                 enabled=False, triggered=self.zoomIn)
-        self.zoomOutAct = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-",
-                                  enabled=False, triggered=self.zoomOut)
-        self.normalSizeAct = QAction("&Normal Size", self, shortcut="Ctrl+S",
-                                     enabled=False, triggered=self.normalSize)
+        self.zoomInAct = QAction("Zoom &In (25%)", self, shortcut="Ctrl++", enabled=False, triggered=self.zoomIn)
+        self.zoomOutAct = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-", enabled=False, triggered=self.zoomOut)
+        self.normalSizeAct = QAction("&Normal Size", self, shortcut="Ctrl+S", enabled=False, triggered=self.normalSize)
         self.fitToWindowAct = QAction("&Fit to Window", self, enabled=False,
                                       checkable=True, shortcut="Ctrl+F", triggered=self.fitToWindow)
-        self.metadataAct = QAction("&Metadata", self, enabled=False,
-                                      checkable=True, triggered=self.metadata)
-        self.histogramAct = QAction("&Histogram", self, enabled=False,
-                                      checkable=True, triggered=self.histogram)
-        self.changeDetectionAct = QAction("&Change Detection", self, enabled=False,
-                                      checkable=True, triggered=self.changeDetection)
-        self.reportsAct = QAction("&Reports", self, enabled=False,
-                                      checkable=True, triggered=self.reports)
+
+        self.metadataAct = QAction("&Metadata", self, enabled=False, triggered=self.metadata)
+        self.histogramAct = QAction("&Histogram", self, enabled=False, triggered=self.histogram)
+        self.changeDetectionAct = QAction("&Change Detection", self, enabled=False, triggered=self.changeDetection)
+        self.reportsAct = QAction("&Reports", self, enabled=False, triggered=self.reports)
 
         self.aboutAct = QAction("&About", self, triggered=self.about)
 
