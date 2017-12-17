@@ -7,12 +7,13 @@ import sys
 
 class DGISTSelectRGB(QMainWindow):
     def __init__(self):
+        #init function
         super(DGISTSelectRGB,self).__init__()
 
         self.initUI()
 
     def initUI(self):
-        dsr = gdal.Open("D:/2.png")
+        dsr = gdal.Open("E:/Projects _Narss/Project 2018/Web based/New Folder/Admin.png")
         self.index = 0
         #self.lbl = QLabel("", self)
         self.lblRed = QLabel("", self)
