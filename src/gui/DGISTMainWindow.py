@@ -70,7 +70,6 @@ class DGISTMainWindow(QMainWindow):
         ReportOperations.prepareReport(self)
         ReportOperations.saveReport(self)
 
-
     def updateActions(self):
         self.zoomInAct.setEnabled(not self.fitToWindowAct.isChecked())
         self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
@@ -103,11 +102,10 @@ class DGISTMainWindow(QMainWindow):
 
         self.metadataAct = QAction("&Metadata", self, enabled=False, triggered=self.metadata)
         self.histogramAct = QAction("&Histogram", self, enabled=False, triggered=self.histogram)
-        self.changeDetectionAct = QAction("&Change Detection", self, enabled=False, triggered=self.changeDetection)
+        self.changeDetectionAct = QAction("&Change Detection", self, enabled=True, triggered=self.changeDetection)
         self.reportsAct = QAction("&Reports", self, enabled=False, triggered=self.reports)
 
         self.aboutAct = QAction("&About", self, triggered=self.about)
-
 
     def createMenus(self):
         self.fileMenu = QMenu("&File", self)
