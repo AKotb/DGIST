@@ -103,7 +103,7 @@ class DGISTMainWindow(QMainWindow):
 
         self.metadataAct = QAction("&Metadata", self, enabled=False, triggered=self.metadata)
         self.histogramAct = QAction("&Histogram", self, enabled=False, triggered=self.histogram)
-        self.changeDetectionAct = QAction("&Change Detection", self, enabled=False, triggered=self.changeDetection)
+        self.changeDetectionAct = QAction("&Change Detection", self, enabled=True, triggered=self.changeDetection)
         self.reportsAct = QAction("&Reports", self, enabled=False, triggered=self.reports)
 
         self.aboutAct = QAction("&About", self, triggered=self.about)
@@ -124,9 +124,9 @@ class DGISTMainWindow(QMainWindow):
         self.imageMenu.addSeparator()
         self.imageMenu.addAction(self.metadataAct)
         self.imageMenu.addAction(self.histogramAct)
-        self.imageMenu.addAction(self.changeDetectionAct)
-        self.imageMenu.addSeparator()
         self.imageMenu.addAction(self.reportsAct)
+        self.imageMenu.addSeparator()
+        self.imageMenu.addAction(self.changeDetectionAct)
 
         self.helpMenu = QMenu("&Help", self)
         self.helpMenu.addAction(self.aboutAct)
