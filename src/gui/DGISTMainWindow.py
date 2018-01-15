@@ -70,7 +70,6 @@ class DGISTMainWindow(QMainWindow):
         ReportOperations.prepareReport(self)
         ReportOperations.saveReport(self)
 
-
     def updateActions(self):
         self.zoomInAct.setEnabled(not self.fitToWindowAct.isChecked())
         self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
@@ -107,7 +106,6 @@ class DGISTMainWindow(QMainWindow):
         self.reportsAct = QAction("&Reports", self, enabled=False, triggered=self.reports)
 
         self.aboutAct = QAction("&About", self, triggered=self.about)
-
 
     def createMenus(self):
         self.fileMenu = QMenu("&File", self)
