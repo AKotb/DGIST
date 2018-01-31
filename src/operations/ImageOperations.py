@@ -1,60 +1,45 @@
 import cv2
+import xlsxwriter
+import numpy as np
 from matplotlib import pyplot as plt
 from osgeo import gdal
-import xlsxwriter
-from random import randint
-import numpy as np
 from Tkinter import *
 from PyQt5.QtCore import QDir
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import (QFileDialog, QMainWindow, QMessageBox)
+from PyQt5.QtWidgets import (QFileDialog)
 from PIL import Image
 
 
-class ImageOperations(QMainWindow):
+class ImageOperations:
     def __init__(self):
         super(ImageOperations, self).__init__()
 
 
-def open(self):
-    self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
-    #self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "C:/Users/ahmed.kotb/PycharmProjects/DGIST/resources")
-    if self.fileName:
-        self.image = QImage(self.fileName)
-        if self.image.isNull():
-            self.statusBar().showMessage('Image Viewer cannot load file.')
-            QMessageBox.information(self, "Image Viewer",
-                                    "Cannot load %s." % self.fileName)
-            return
-
-        self.imageLabel.setPixmap(QPixmap.fromImage(self.image))
-        self.scaleFactor = 1.0
-
-        self.saveAct.setEnabled(True)
-        self.fitToWindowAct.setEnabled(True)
-        self.metadataAct.setEnabled(True)
-        self.histogramAct.setEnabled(True)
-        self.changeDetectionAct.setEnabled(True)
-        self.reportsAct.setEnabled(True)
-        self.updateActions()
-        self.statusBar().showMessage('File loaded in Image Viewer.')
-
-        if not self.fitToWindowAct.isChecked():
-            self.imageLabel.adjustSize()
+def openImage(QMainWindow):
+    QMainWindow.fileName = QFileDialog.getOpenFileName(QMainWindow, "Open Image", QDir.currentPath())[0]
+    ds = gdal.Open(QMainWindow.fileName)
+    lst = []
+    for band in range(ds.RasterCount):
+        band += 1
+        nparray = ds.GetRasterBand(band).ReadAsArray()
+        lst.append(nparray)
+    if len(lst) > 1:
+        data = np.dstack(lst)
+        QMainWindow.metadataAct.setEnabled(True)
+        QMainWindow.histogramAct.setEnabled(True)
+    else:
+        data = ds.ReadAsArray()
+        QMainWindow.metadataAct.setEnabled(False)
+        QMainWindow.histogramAct.setEnabled(False)
+    plt.gcf().canvas.set_window_title(QMainWindow.fileName)
+    plt.imshow(data)
+    plt.axis('off')
+    plt.colorbar()
+    plt.show()
+    QMainWindow.statusBar().showMessage('File loaded in Image Viewer.')
 
 
-def save(self):
-    # this is save method
-    filename = QFileDialog.getSaveFileName(self, "Save", "", "All Files (*);;TIF Image (*.tif);;PNG Image (*.png);;JPG Image (*.jpg);;Text Files (*.txt)")[0]
-    img = cv2.imread(self.fileName)
-    cv2.imwrite(filename, img)
-    self.statusBar().showMessage('Image saved into ' + filename)
-
-
-def metadata(self):
-    img = Image.open(self.fileName)
-    print(img.getbands)
-    self.statusBar().showMessage('Metadata generated.')
+def metadata(QMainWindow):
+    img = Image.open(QMainWindow.fileName)
     root = Tk()
     root.title("Image Metadata")
     root.geometry("500x600")
@@ -63,17 +48,19 @@ def metadata(self):
     frame.pack()
     label.pack()
     root.mainloop()
+    QMainWindow.statusBar().showMessage('Metadata generated.')
 
 
-def histogram(self):
-    self.statusBar().showMessage('Histogram generated.')
-    img = cv2.imread(self.fileName)
+def histogram(QMainWindow):
+    img = cv2.imread(QMainWindow.fileName)
     color = ('b', 'g', 'r')
     for i, col in enumerate(color):
         histr = cv2.calcHist([img], [i], None, [256], [0, 256])
         plt.plot(histr, color=col)
         plt.xlim([0, 256])
     plt.show()
+    QMainWindow.statusBar().showMessage('Histogram generated.')
+
 
 def write_geotiff(fname, data, geo_transform, projection, data_type=gdal.GDT_Byte):
     driver = gdal.GetDriverByName('GTiff')
@@ -86,13 +73,14 @@ def write_geotiff(fname, data, geo_transform, projection, data_type=gdal.GDT_Byt
     dataset = None
     return
 
-def changeDetection(self):
-    image1, _ = QFileDialog.getOpenFileName(self, "Choose The First Image", QDir.currentPath())
-    image2, _ = QFileDialog.getOpenFileName(self, "Choose The Second Image", QDir.currentPath())
-    outputImageName = QFileDialog.getSaveFileName(self, "Save Change Detection Result", "",
+
+def changeDetection(QMainWindow):
+    image1, _ = QFileDialog.getOpenFileName(QMainWindow, "Choose The First Image", QDir.currentPath())
+    image2, _ = QFileDialog.getOpenFileName(QMainWindow, "Choose The Second Image", QDir.currentPath())
+    outputImageName = QFileDialog.getSaveFileName(QMainWindow, "Save Change Detection Result", "",
                                                   "TIF Image (*.tif);;PNG Image (*.png);;BMP Image (*.bmp);;JPG Image (*.jpg);;Text Files (*.txt)")[
         0]
-    outputMatrixName = QFileDialog.getSaveFileName(self, "Save Change Detection Matrix", "",
+    outputMatrixName = QFileDialog.getSaveFileName(QMainWindow, "Save Change Detection Matrix", "",
                                                    "Excel XLSX (*.xlsx);;Excel XLS (*.xls);;Text Files (*.txt)")[0]
 
     raster_before = gdal.Open(image1, gdal.GA_ReadOnly)
@@ -116,13 +104,13 @@ def changeDetection(self):
             change_mat[bands_before[i][j]][bands_after[i][j]] += 1
             flat_data[i][j] = 7 * (bands_before[i][j]) + (bands_after[i][j]) + 1
         # print str(int(100.0 * i / rows_after))+"%"
-        self.statusBar().showMessage("Difference Image Creation: " + str(int(100.0 * i / rows_after))+"%")
+        QMainWindow.statusBar().showMessage("Difference Image Creation: " + str(int(100.0 * i / rows_after))+"%")
 
-    self.statusBar().showMessage("Difference Image Created @ ")
+    QMainWindow.statusBar().showMessage("Difference Image Created @ ")
 
     write_geotiff(outputImageName, flat_data, geo_transform, proj)
 
-    self.statusBar().showMessage("Difference Image Saved @ " + outputImageName)
+    QMainWindow.statusBar().showMessage("Difference Image Saved @ " + outputImageName)
 
     workbook = xlsxwriter.Workbook(outputMatrixName)
     ws_stat = workbook.add_worksheet()
@@ -144,6 +132,6 @@ def changeDetection(self):
 
     workbook.close()
 
-    self.statusBar().showMessage("Difference Image Report Saved @ " + outputMatrixName)
-    self.statusBar().showMessage("Change Detection Process finished successfully.")
-    self.statusBar().showMessage("")
+    QMainWindow.statusBar().showMessage("Difference Image Report Saved @ " + outputMatrixName)
+    QMainWindow.statusBar().showMessage("Change Detection Process finished successfully.")
+    QMainWindow.statusBar().showMessage("")
