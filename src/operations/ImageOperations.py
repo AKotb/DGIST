@@ -30,6 +30,7 @@ def openImage(QMainWindow):
         data = ds.ReadAsArray()
         QMainWindow.metadataAct.setEnabled(False)
         QMainWindow.histogramAct.setEnabled(False)
+    plt.figure(120)
     plt.gcf().canvas.set_window_title(QMainWindow.fileName)
     plt.imshow(data)
     plt.axis('off')
@@ -56,8 +57,11 @@ def histogram(QMainWindow):
     color = ('b', 'g', 'r')
     for i, col in enumerate(color):
         histr = cv2.calcHist([img], [i], None, [256], [0, 256])
+        plt.figure(121)
         plt.plot(histr, color=col)
         plt.xlim([0, 256])
+    plt.gcf().canvas.set_window_title('Image Histogram')
+    plt.legend(color, loc='best')
     plt.show()
     QMainWindow.statusBar().showMessage('Histogram generated.')
 
