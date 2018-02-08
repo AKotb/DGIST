@@ -1,9 +1,11 @@
-from PyQt5.QtWidgets import (QAction, QApplication, QMainWindow, QMenu)
+import sys
+from PyQt5.QtWidgets import (QAction, QApplication, QMainWindow, QMenu, QFileDialog)
+from PyQt5.QtCore import QDir
 from src.gui import DGISTAbout
-from src.operations import ImageOperations
 
 
 class DGISTMainWindow(QMainWindow):
+
     def __init__(self):
         super(DGISTMainWindow, self).__init__()
         self.createActions()
@@ -15,16 +17,25 @@ class DGISTMainWindow(QMainWindow):
         DGISTAbout.about(self)
 
     def open(self):
-        ImageOperations.openImage(self)
+        from src.operations import ImageOperations
+        self.imgpath = QFileDialog.getOpenFileName(self, "Open Image", QDir.currentPath())[0]
+        imgopt = ImageOperations.ImageOperations()
+        imgopt.openImage(self, self.imgpath)
 
     def metadata(self):
-        ImageOperations.metadata(self)
+        from src.operations import ImageOperations
+        imgopt = ImageOperations.ImageOperations()
+        imgopt.metadata(self, self.imgpath)
 
     def histogram(self):
-        ImageOperations.histogram(self)
+        from src.operations import ImageOperations
+        imgopt = ImageOperations.ImageOperations()
+        imgopt.histogram(self, self.imgpath)
 
     def changeDetection(self):
-        ImageOperations.changeDetection(self)
+        from src.operations import ImageOperations
+        imgopt = ImageOperations.ImageOperations()
+        imgopt.changeDetection()
 
     def createActions(self):
         self.openAct = QAction("&Open...", self, shortcut="Ctrl+O", triggered=self.open)
@@ -51,8 +62,16 @@ class DGISTMainWindow(QMainWindow):
         self.menuBar().addMenu(self.helpMenu)
 
 
+sys._excepthook = sys.excepthook
+
+def my_exception_hook(exctype, value, traceback):
+    print(exctype, value, traceback)
+    sys._excepthook(exctype, value, traceback)
+    sys.exit(1)
+
+sys.excepthook = my_exception_hook
+
 if __name__ == '__main__':
-    import sys
     app = QApplication(sys.argv)
     dGISTMainWindow = DGISTMainWindow()
     dGISTMainWindow.show()
