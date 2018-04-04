@@ -12,6 +12,8 @@ class DGISTMainWindow(QMainWindow):
         self.createMenus()
         self.setWindowTitle("DGIST")
         self.setGeometry(50, 100, 500, 50)
+        self.imagecounter=120
+        self.histocounter = 220
 
     def about(self):
         DGISTAbout.about(self)
@@ -37,12 +39,18 @@ class DGISTMainWindow(QMainWindow):
         imgopt = ImageOperations.ImageOperations()
         imgopt.changeDetection()
 
+    def trendCalculator(self):
+        from src.operations import ImageOperations
+        imgopt = ImageOperations.ImageOperations()
+        imgopt.trendCalculator()
+
     def createActions(self):
         self.openAct = QAction("&Open...", self, shortcut="Ctrl+O", triggered=self.open)
         self.exitAct = QAction("E&xit", self, shortcut="Ctrl+Q", triggered=self.close)
         self.metadataAct = QAction("&Metadata", self, enabled=False, triggered=self.metadata)
         self.histogramAct = QAction("&Histogram", self, enabled=False, triggered=self.histogram)
         self.changeDetectionAct = QAction("&Change Detection", self, enabled=True, triggered=self.changeDetection)
+        self.trendCalculatorAct = QAction("&Trend Calculator", self, enabled=True, triggered=self.trendCalculator)
         self.aboutAct = QAction("&About", self, triggered=self.about)
 
     def createMenus(self):
@@ -55,6 +63,7 @@ class DGISTMainWindow(QMainWindow):
         self.imageMenu.addAction(self.histogramAct)
         self.imageMenu.addSeparator()
         self.imageMenu.addAction(self.changeDetectionAct)
+        self.imageMenu.addAction(self.trendCalculatorAct)
         self.helpMenu = QMenu("&Help", self)
         self.helpMenu.addAction(self.aboutAct)
         self.menuBar().addMenu(self.fileMenu)

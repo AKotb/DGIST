@@ -58,15 +58,13 @@ class DGISTSelectRGB(QMainWindow):
         combo = QComboBox(self)
 
         print "[ RASTER BAND COUNT ]: ", dsr.RasterCount
-        self.arrBands = []
+
         for band in range(dsr.RasterCount):
             band += 1
             print "[ GETTING BAND ]: ", band
             srcband = dsr.GetRasterBand(band)
             combo.addItem(str(srcband.GetBand()))
 
-
-        print "arrBands ", self.arrBands.__len__()
 
         combo.move(25, 50)
         self.buttonRed.move(150, 50)
