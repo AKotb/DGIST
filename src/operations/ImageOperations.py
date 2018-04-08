@@ -163,7 +163,7 @@ class ImageOperations(DGISTMainWindow):
         b.pack()
         b.place(x=200, y=250)
         self.root.mainloop()
-
+#jhjhk
     def metadata(self, DGISTMainWindow, imagepath):
 
         self.meta_imgpath = imagepath

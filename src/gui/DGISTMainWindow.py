@@ -3,7 +3,6 @@ from PyQt5.QtWidgets import (QAction, QApplication, QMainWindow, QMenu, QFileDia
 from PyQt5.QtCore import QDir
 from src.gui import DGISTAbout
 
-
 class DGISTMainWindow(QMainWindow):
 
     def __init__(self):
@@ -27,6 +26,7 @@ class DGISTMainWindow(QMainWindow):
     def metadata(self):
         from src.operations import ImageOperations
         imgopt = ImageOperations.ImageOperations()
+        print self.imgpath
         imgopt.metadata(self, self.imgpath)
 
     def histogram(self):
