@@ -22,6 +22,7 @@ class ImageOperations(DGISTMainWindow):
     def openImage(self, DGISTMainWindow, imagepath):
         self.imagepath=imagepath
         ds = gdal.Open(imagepath)
+
         self.dsr_array = np.array(ds.ReadAsArray(), dtype=np.uint8)
         lst = []
         for band in range(ds.RasterCount):
@@ -165,26 +166,54 @@ class ImageOperations(DGISTMainWindow):
 
     def metadata(self, DGISTMainWindow, imagepath):
 
+        self.meta_imgpath = imagepath
+        ds = gdal.Open(self.meta_imgpath)
+
+        self.meta_bands = ds.RasterCount
+        band = ds.GetRasterBand(1)
+        arr = band.ReadAsArray()
+        self.meta_rows, self.meta_cols = arr.shape
+        self.meta_imagesize = str(os.path.getsize(self.meta_imgpath))+" Bytes"
+        self.meta_type = ((os.path.splitext(self.meta_imgpath)[1])[1:]).upper()
+
+        ds = None
+
+        self.meta_header = ["Image Path", "Size", "Type", "Columns", "Rows", "Bands"]
+
         self.rootMeta = Tk()
-        self.rootMeta.title("Trend Calculator")
+        self.rootMeta.title("Metadata Viewer")
         self.frameMeta = Frame(self.rootMeta)
         self.frameMeta.pack()
 
         labelHeader = Label(self.frameMeta, text="Metadata Viewer", font=("SansSerif", 20, "bold"))
 
-        labelMetaimgpath = Label(self.frameMeta, text="Image Path", font=("SansSerif", 12))
-        labelMetasize = Label(self.frameMeta, text="Size", font=("SansSerif", 12))
-        labelMetatype = Label(self.frameMeta, text="Type", font=("SansSerif", 12))
-        labelMetacols = Label(self.frameMeta, text="Columns", font=("SansSerif", 12))
-        labelMetarows = Label(self.frameMeta, text="Rows", font=("SansSerif", 12))
-        labelMetabnds = Label(self.frameMeta, text="Bands", font=("SansSerif", 12))
+        labelMetaimgpath = Label(self.frameMeta, text=self.meta_header[0], font=("SansSerif", 12))
+        labelMetasize = Label(self.frameMeta, text=self.meta_header[1], font=("SansSerif", 12))
+        labelMetatype = Label(self.frameMeta, text=self.meta_header[2], font=("SansSerif", 12))
+        labelMetacols = Label(self.frameMeta, text=self.meta_header[3], font=("SansSerif", 12))
+        labelMetarows = Label(self.frameMeta, text=self.meta_header[4], font=("SansSerif", 12))
+        labelMetabnds = Label(self.frameMeta, text=self.meta_header[5], font=("SansSerif", 12))
 
-        self.entryMetaimgpath = Entry(self.frameMeta, width=70, font=("SansSerif", 12))
-        self.entryMetasize = Entry(self.frameMeta, width=70, font=("SansSerif", 12))
-        self.entryMetatype = Entry(self.frameMeta, width=70, font=("SansSerif", 12))
-        self.entryMetacols = Entry(self.frameMeta, width=70, font=("SansSerif", 12))
-        self.entryMetarows = Entry(self.frameMeta, width=70, font=("SansSerif", 12))
-        self.entryMetabnds = Entry(self.frameMeta, width=70, font=("SansSerif", 12))
+        self.entryMetaimgpath = Entry(self.frameMeta, width=60, font=("SansSerif",  12, "bold"))
+        self.entryMetasize = Entry(self.frameMeta, width=60, font=("SansSerif",  12, "bold"))
+        self.entryMetatype = Entry(self.frameMeta, width=60, font=("SansSerif",  12, "bold"))
+        self.entryMetacols = Entry(self.frameMeta, width=60, font=("SansSerif",  12, "bold"))
+        self.entryMetarows = Entry(self.frameMeta, width=60, font=("SansSerif",  12, "bold"))
+        self.entryMetabnds = Entry(self.frameMeta, width=60, font=("SansSerif",  12, "bold"))
+
+        self.entryMetaimgpath.insert(0, self.meta_imgpath)
+        self.entryMetasize.insert(0, self.meta_imagesize)
+        self.entryMetatype.insert(0, self.meta_type)
+        self.entryMetacols.insert(0, self.meta_cols)
+        self.entryMetarows.insert(0, self.meta_rows)
+        self.entryMetabnds.insert(0, self.meta_bands)
+
+        self.entryMetaimgpath.configure(state="disabled")
+        self.entryMetasize.configure(state="disabled")
+        self.entryMetatype.configure(state="disabled")
+        self.entryMetacols.configure(state="disabled")
+        self.entryMetarows.configure(state="disabled")
+        self.entryMetabnds.configure(state="disabled")
 
         btnExportmeta = Button(self.frameMeta, text="Export Metadata", font=("SansSerif", 14), command=self.save_metadata)
 
@@ -302,8 +331,8 @@ class ImageOperations(DGISTMainWindow):
 
     def run_change_detection(self):
 
-        raster_before = gdal.Open(self.image1, gdal.GA_ReadOnly)
-        raster_after = gdal.Open(self.image2, gdal.GA_ReadOnly)
+        raster_before = gdal.Open(self.entryInitial.get(), gdal.GA_ReadOnly)
+        raster_after = gdal.Open(self.entryFinal.get(), gdal.GA_ReadOnly)
         geo_transform = raster_after.GetGeoTransform()
         #proj = raster_after.GetProjectionRef()
 
@@ -327,7 +356,7 @@ class ImageOperations(DGISTMainWindow):
         ## write difference image into the output path
         driver = gdal.GetDriverByName('GTiff')
         rows, cols = flat_data.shape
-        dataset = driver.Create(self.image3, cols, rows, 1, gdal.GDT_Byte)
+        dataset = driver.Create(self.entryImgDiff.get(), cols, rows, 1, gdal.GDT_Byte)
         dataset.SetGeoTransform(geo_transform)
         # dataset.SetProjectionw(proj)
         band = dataset.GetRasterBand(1)
@@ -336,7 +365,7 @@ class ImageOperations(DGISTMainWindow):
 
         ## view difference image
         plt.figure(120)
-        plt.gcf().canvas.set_window_title(self.image3)
+        plt.gcf().canvas.set_window_title(self.entryImgDiff.get())
         plt.imshow(flat_data)
         plt.axis('off')
         plt.show()
@@ -424,21 +453,22 @@ class ImageOperations(DGISTMainWindow):
     def save_metadata(self):
 
         print "Save metadata file"
-        '''
+
         self.trend_report_path = QFileDialog.getSaveFileName(self, "Save Trend Report", "", "Excel XLSX (*.xlsx);;Excel XLS (*.xls);;Text Files (*.txt)")[0]
         if self.trend_report_path:
             workbook = xlsxwriter.Workbook(self.trend_report_path)
             ws_trend = workbook.add_worksheet()
 
             for i in range(0, 6):
-                ws_trend.write_string(0, i + 1, self.image_names[i])
+                ws_trend.write_string(i + 1, 1, self.meta_header[i])
 
-            for i in range(0, 7):
-                ws_trend.write_string(i + 1, 0, self.classes[i])
+            ws_trend.write(1, 2, self.meta_imgpath)
+            ws_trend.write(2, 2, self.meta_imagesize)
+            ws_trend.write(3, 2, self.meta_type)
+            ws_trend.write(4, 2, self.meta_cols)
+            ws_trend.write(5, 2, self.meta_rows)
+            ws_trend.write(6, 2, self.meta_bands)
 
-            for col, data in enumerate(self.trend_mat):
-                ws_trend.write_row(col + 1, 1, data)
-        '''
 
     def view_change_detection_report(self):
 
