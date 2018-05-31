@@ -10,6 +10,7 @@ from PyQt5.QtCore import QDir
 from PIL import Image
 from PyQt5.QtWidgets import (QFileDialog)
 from src.gui.DGISTMainWindow import DGISTMainWindow
+import threading
 
 class ImageOperations(DGISTMainWindow):
 
@@ -18,6 +19,7 @@ class ImageOperations(DGISTMainWindow):
         self.selectedbnd1=1
         self.selectedbnd2=1
         self.selectedbnd3=1
+        self.selectedbnd_histo=1
 
     def openImage(self, DGISTMainWindow, imagepath):
         self.imagepath=imagepath
@@ -97,6 +99,10 @@ class ImageOperations(DGISTMainWindow):
     def band3Value(self, event):
         self.selectedbnd3 = self.band3.get()
 
+    def band_histo_value(self, event):
+        self.selectedbnd_histo = self.band_histo.get()
+        print self.band_histo.get()
+
     def openMultiBandImage(self, ds):
         self.root = Tk()
         self.root.title("RGB Band Selection")
@@ -163,7 +169,7 @@ class ImageOperations(DGISTMainWindow):
         b.pack()
         b.place(x=200, y=250)
         self.root.mainloop()
-#jhjhk
+
     def metadata(self, DGISTMainWindow, imagepath):
 
         self.meta_imgpath = imagepath
@@ -240,8 +246,10 @@ class ImageOperations(DGISTMainWindow):
     def histogram(self, DGISTMainWindow, imagepath):
         ds = gdal.Open(imagepath)
         self.imgbands = ds.RasterCount
+        print self.imgbands
         if self.imgbands > 3:
             img = cv2.imread(os.getcwd() + '/rgbbandimage.png')
+            print (os.getcwd() + '/rgbbandimage.png')
         else:
             img = cv2.imread(imagepath)
         color = ('b', 'g', 'r')
@@ -252,8 +260,52 @@ class ImageOperations(DGISTMainWindow):
             plt.xlim([0, 256])
         plt.gcf().canvas.set_window_title('Image Histogram')
         plt.legend(color, loc='best')
+        plt.xlabel('DN')
+        plt.ylabel('Pixel Count')
         plt.show()
         DGISTMainWindow.histocounter=DGISTMainWindow.histocounter+1
+
+    def view_histogram(self):
+        print "Draw Histogram"
+        print self.band_selected
+        #print self.dsr_array[:,:,self.band_histo.get()]
+        cur_band = self.dsr_array[:, :, int(self.band_histo.get())]
+
+        plt.hist(cur_band.ravel(), bins=32, range=(np.amin(cur_band), np.amax(cur_band)), fc='b', ec='k')
+        plt.gcf().canvas.set_window_title('Image Histogram')
+        plt.xlabel('DN')
+        plt.ylabel('Pixel Count')
+        plt.show()
+
+    def histogram2(self, DGISTMainWindow, imagepath):
+        print "inside histogram"
+
+        ds = gdal.Open(imagepath)
+        self.dsr_array = np.array(ds.ReadAsArray(), dtype=np.uint8)
+
+        self.rootH = Tk()
+        self.rootH.title("Histogram Band Selection")
+        #self.rootH.geometry("500x300")
+        frameH = Frame(self.rootH, width=500, height=300)
+        labelHeader = Label(frameH, text="Histogram Band Selection", font=("SansSerif", 16, "bold")).grid(row=1, column=2, sticky=N, pady=10, padx=10)
+        labelRed = Label(frameH, text="Select Band", font=("SansSerif", 12, "bold")).grid(row=2, column=1, sticky=E, pady=10, padx=10)
+
+        frameH.pack()
+
+        bndlst = []
+        for band in range(ds.RasterCount):
+            band += 1
+            bndlst.append(band)
+
+        self.band_selected = StringVar()
+        self.band_histo = ttk.Combobox(frameH, textvariable=self.band_selected)
+        self.band_histo.grid(row=2, column=2, sticky=W, pady=10,padx=10)
+        self.band_histo.bind("<<ComboboxSelected>>", self.band_histo_value)
+        self.band_histo['values'] = bndlst
+        self.band_histo.current(0)
+
+        b = Button(frameH, text="Draw Histogram", command=self.view_histogram).grid(row=2, column=3, sticky=E, pady=10, padx=10)
+        self.rootH.mainloop()
 
     def write_geotiff(self, fname, data, geo_transform, projection, data_type=gdal.GDT_Byte):
         driver = gdal.GetDriverByName('GTiff')
@@ -322,13 +374,6 @@ class ImageOperations(DGISTMainWindow):
             self.entryImage5.delete(0, END)
             self.entryImage5.insert(0, self.image_t5)
 
-    def select_image6_path(self):
-        print "selecting image 6 path"
-        self.image_t6, _ = QFileDialog.getOpenFileName(self, "Choose The Input Image 6", QDir.currentPath())
-        if self.image_t6:
-            self.entryImage6.delete(0, END)
-            self.entryImage6.insert(0, self.image_t6)
-
     def run_change_detection(self):
 
         raster_before = gdal.Open(self.entryInitial.get(), gdal.GA_ReadOnly)
@@ -343,34 +388,34 @@ class ImageOperations(DGISTMainWindow):
         bands_after = band.ReadAsArray()
         rows_after, cols_after = bands_after.shape
 
-        flat_data = bands_after.reshape((rows_after, cols_after))
+        self.data_diff = bands_after.reshape((rows_after, cols_after))
 
         self.change_mat = np.zeros((7, 7), dtype=np.int)
 
         for i in range(rows_after):
             for j in range(cols_after):
                 self.change_mat[bands_before[i][j]][bands_after[i][j]] += 1
-                flat_data[i][j] = 7 * (bands_before[i][j]) + (bands_after[i][j]) + 1
+                self.data_diff[i][j] = 7 * (bands_before[i][j]) + (bands_after[i][j]) + 1
             print str(int(100.0 * i / rows_after))+"%"
+            self.entryProgCD.configure(width=1+ int(70.0 * i / rows_after))
+            self.labelProgCD.configure(text=(str(1+int(100.0 * i / rows_after)) + "%"))
 
         ## write difference image into the output path
         driver = gdal.GetDriverByName('GTiff')
-        rows, cols = flat_data.shape
+        rows, cols = self.data_diff.shape
         dataset = driver.Create(self.entryImgDiff.get(), cols, rows, 1, gdal.GDT_Byte)
         dataset.SetGeoTransform(geo_transform)
         # dataset.SetProjectionw(proj)
         band = dataset.GetRasterBand(1)
-        band.WriteArray(flat_data)
+        band.WriteArray(self.data_diff)
         dataset = None
 
-        ## view difference image
-        plt.figure(120)
-        plt.gcf().canvas.set_window_title(self.entryImgDiff.get())
-        plt.imshow(flat_data)
-        plt.axis('off')
-        plt.show()
-
         self.btnViewReport.configure(state=NORMAL)
+        self.btnViewImgDiff.configure(state=NORMAL)
+
+    def start_change_detection(self):
+        threading.Thread(target=self.run_change_detection).start()
+        #self.frameCD.after(100, self.run_change_detection)
 
     def run_trend_calculator(self):
 
@@ -380,8 +425,8 @@ class ImageOperations(DGISTMainWindow):
         raster3 = gdal.Open(self.entryImage3.get(), gdal.GA_ReadOnly)
         raster4 = gdal.Open(self.entryImage4.get(), gdal.GA_ReadOnly)
         raster5 = gdal.Open(self.entryImage5.get(), gdal.GA_ReadOnly)
-        raster6 = gdal.Open(self.entryImage6.get(), gdal.GA_ReadOnly)
-        geo_transform = raster1.GetGeoTransform()
+
+        #geo_transform = raster1.GetGeoTransform()
         # proj = raster_after.GetProjectionRef()
 
         band = raster1.GetRasterBand(1)
@@ -394,15 +439,15 @@ class ImageOperations(DGISTMainWindow):
         band4 = band.ReadAsArray()
         band = raster5.GetRasterBand(1)
         band5 = band.ReadAsArray()
-        band = raster6.GetRasterBand(1)
-        band6 = band.ReadAsArray()
 
         rows, cols = band1.shape
 
         no_of_classes = 7
-        no_of_images = 6
+        no_of_images = 5
 
         self.trend_mat = np.zeros((no_of_classes, no_of_images), dtype=np.int)
+
+        self.entryProgTrend.configure(state=NORMAL)
 
         for i in range(rows):
             for j in range(cols):
@@ -411,11 +456,18 @@ class ImageOperations(DGISTMainWindow):
                 self.trend_mat[band3[i][j]][2] += 1
                 self.trend_mat[band4[i][j]][3] += 1
                 self.trend_mat[band5[i][j]][4] += 1
-                self.trend_mat[band6[i][j]][5] += 1
-            print str(int(100.0 * i / rows)) + "%"
+            print str(1+int(100.0 * i / rows)) + "%"
+            #self.labelHeader.configure(text=str(1+int(100.0 * i / rows)) + "%")
+            self.entryProgTrend.configure(width=1+int(70.0 * i / rows))
+            self.labelProgTrend.configure(text=(str(1+int(100.0 * i / rows)) + "%"))
+        #self.labelHeader.configure(text="Trend Calculator")
 
         self.btnViewTrend.configure(state=NORMAL)
         self.btnPlotTrend.configure(state=NORMAL)
+
+    def start_trend_calculator(self):
+        threading.Thread(target=self.run_trend_calculator).start()
+        #self.frameTC.after(100, self.run_trend_calculator)
 
     def save_statistical_report(self):
 
@@ -424,31 +476,30 @@ class ImageOperations(DGISTMainWindow):
             workbook = xlsxwriter.Workbook(self.report_path)
             ws_stat = workbook.add_worksheet()
 
-            for i in range(0, 7):
+            for i in range(0, 6):
                 ws_stat.write_string(0, i + 1, self.classes[i])
                 ws_stat.write_string(i + 1, 0, self.classes[i])
 
-            for col, data in enumerate(self.change_mat):
-                ws_stat.write_column(1, col + 1, data)
+            for i in range(0,6):
+                for j in range(0, 6):
+                    ws_stat.write(i+1, j+1, self.change_mat[i][j])
 
     def save_trend_report(self):
+
+        self.classes = ["Unclassified", "Water", "Desert", "Urban", "Vegetation", "Bareland"]
+        self.image_names = ["1984", "1992", "2002", "2013", "2017"]
 
         self.metadata_report_path = QFileDialog.getSaveFileName(self, "Save Metadata", "", "Excel XLSX (*.xlsx);;Excel XLS (*.xls);;Text Files (*.txt)")[0]
         if self.metadata_report_path:
             workbook = xlsxwriter.Workbook(self.metadata_report_path)
             ws_trend = workbook.add_worksheet()
 
-            ws_trend.write_string(1, 1, "Metadata")
-            '''
-            for i in range(0, 6):
-                ws_trend.write_string(0, i + 1, self.image_names[i])
+            ws_trend.write_row(1, 2, self.image_names)
+            ws_trend.write_column(2, 1, self.classes)
 
-            for i in range(0, 7):
-                ws_trend.write_string(i + 1, 0, self.classes[i])
-
-            for col, data in enumerate(self.trend_mat):
-                ws_trend.write_row(col + 1, 1, data)
-            '''
+            for i in range(0,6):
+                for j in range(0, 5):
+                    ws_trend.write(i+2, j+2, self.trend_mat[i][j])
 
     def save_metadata(self):
 
@@ -469,7 +520,6 @@ class ImageOperations(DGISTMainWindow):
             ws_trend.write(5, 2, self.meta_rows)
             ws_trend.write(6, 2, self.meta_bands)
 
-
     def view_change_detection_report(self):
 
         self.rootCDR = Tk()
@@ -478,7 +528,7 @@ class ImageOperations(DGISTMainWindow):
         self.frameCDR.pack()
 
         header_names = ["State No.", "BEFORE", "AFTER", "# of pixels", "Percent (%)"]
-        self.classes = ["Class 0", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6"]
+        self.classes = ["Unclassified", "Water", "Desert", "Urban", "Vegetation", "Bareland"]
 
         btnSaveStatReport = Button(self.frameCDR, text="Save Statistical Report", fg="blue", command=self.save_statistical_report, bg="white", font=("SansSerif", 10, "bold"))
         btnSaveStatReport.grid(row=0, column=0, sticky=E, pady=10, padx=5)
@@ -486,12 +536,12 @@ class ImageOperations(DGISTMainWindow):
         Label(self.frameCDR, text="          ", font=("SansSerif", 10, "bold")).grid(row=9, column=2, sticky=E, pady=0, padx=0)
         Label(self.frameCDR, text="          ", font=("SansSerif", 10, "bold")).grid(row=2, column=9, sticky=E, pady=0,padx=0)
 
-        for i in range(0, 7):
+        for i in range(0, 6):
             Label(self.frameCDR, text=self.classes[i], width=12, font=("SansSerif", 10, "bold")).grid(row=0, column=i+1, sticky=E, pady=0, padx=0)
 
-        for i in range(0, 7):
+        for i in range(0, 6):
             Label(self.frameCDR, text=self.classes[i], width=12, font=("SansSerif", 10, "bold")).grid(row=i+1, column=0,sticky=E, pady=0, padx=0)
-            for j in range(0, 7):
+            for j in range(0, 6):
                 Button(self.frameCDR, text=str(self.change_mat[i][j]), bg="white", width=12, font=("SansSerif", 10, "bold")).grid(row=i+1, column=j+1, sticky=E, pady=0, padx=0)
 
         self.rootCDR.mainloop()
@@ -505,8 +555,8 @@ class ImageOperations(DGISTMainWindow):
         self.frameTR = Frame(self.rootTR)
         self.frameTR.pack()
 
-        self.classes = ["Class 0", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6"]
-        self.image_names = ["Image 1", "Image 2", "Image 3", "Image 4", "Image 5", "Image 6"]
+        self.classes = ["Unclassified", "Water", "Desert", "Urban", "Vegetation", "Bareland"]
+        self.image_names = ["1984", "1992", "2002", "2013", "2017"]
 
         btnSaveTrendReport = Button(self.frameTR, text="Save Trend Report", fg="blue",
                                    command=self.save_trend_report, bg="white", font=("SansSerif", 10, "bold"))
@@ -517,40 +567,49 @@ class ImageOperations(DGISTMainWindow):
         Label(self.frameTR, text="          ", font=("SansSerif", 10, "bold")).grid(row=2, column=9, sticky=E, pady=0,
                                                                                      padx=0)
 
-        for i in range(0, 6):
+        for i in range(0, 5):
             Label(self.frameTR, text=self.image_names[i], width=12, font=("SansSerif", 10, "bold")).grid(row=0,
                                                                                                       column=i + 1,
                                                                                                       sticky=E, pady=0,
                                                                                                       padx=0)
 
-        for i in range(0, 7):
-            Label(self.frameTR, text=self.classes[i], width=12, font=("SansSerif", 10, "bold")).grid(row=i + 1,
+        for i in range(0, 6):
+            Label(self.frameTR, text=self.classes[i], width=12, font=("SansSerif", 10, "bold")).grid(row=i+1,
                                                                                                       column=0,
                                                                                                       sticky=E, pady=0,
                                                                                                       padx=0)
-            for j in range(0, 6):
+            for j in range(0, 5):
                 Button(self.frameTR, text=str(self.trend_mat[i][j]), bg="white", width=12,
-                       font=("SansSerif", 10, "bold")).grid(row=i + 1, column=j + 1, sticky=E, pady=0, padx=0)
+                       font=("SansSerif", 10, "bold")).grid(row=i+1, column=j + 1, sticky=E, pady=0, padx=0)
 
         self.rootTR.mainloop()
 
     def plot_trend(self):
 
         print "inside plot trend method"
-
+        self.classes = ["Unclassified", "Water", "Desert", "Urban", "Vegetation", "Bareland"]
+        self.image_names = ["1984", "1992", "2002", "2013", "2017"]
+        self.class_color = ['b', 'g', 'r', 'c', 'm', 'k']
         fig, ax = plt.subplots()
+        plt.gcf().canvas.set_window_title("Trend Curve")
         plt.axis([0, 7, 0, np.amax(self.trend_mat)])
-        ax.plot([1, 2, 3, 4, 5, 6], self.trend_mat[1,:], 'b', label='Class 1')
-        ax.plot([1, 2, 3, 4, 5, 6], self.trend_mat[2, :], 'g', label='Class 2')
-        ax.plot([1, 2, 3, 4, 5, 6], self.trend_mat[3, :], 'r', label='Class 3')
-        ax.plot([1, 2, 3, 4, 5, 6], self.trend_mat[4, :], 'c', label='Class 4')
-        ax.plot([1, 2, 3, 4, 5, 6], self.trend_mat[5, :], 'm', label='Class 5')
-        ax.plot([1, 2, 3, 4, 5, 6], self.trend_mat[6, :], 'y', label='Class 6')
+        for i in range(0, 6):
+            ax.plot(self.image_names, self.trend_mat[i,:], self.class_color[i], label=self.classes[i])
 
         ax.legend(loc='upper right', shadow=True)
         plt.xlabel('Image Number')
         plt.ylabel('Pixels per Class')
         plt.title('Trend Curve')
+        plt.show()
+
+    def draw_image_difference(self):
+
+        print "inside draw image difference method"
+        ## view difference image
+        plt.figure(120)
+        plt.gcf().canvas.set_window_title(self.entryImgDiff.get())
+        plt.imshow(self.data_diff)
+        plt.axis('off')
         plt.show()
 
     def changeDetection(self):
@@ -572,9 +631,15 @@ class ImageOperations(DGISTMainWindow):
         btnChooseInitial = Button(self.frameCD, text="Choose", font=("SansSerif", 12), command=self.select_initial_path)
         btnChooseFinal = Button(self.frameCD, text="Choose", font=("SansSerif", 12), command=self.select_final_path)
         btnChooseImgDiff = Button(self.frameCD, text="Choose", font=("SansSerif", 12), command=self.select_img_diff_path)
-        btnRun = Button(self.frameCD, text="Run", font=("SansSerif", 14), command=self.run_change_detection)
+        btnRun = Button(self.frameCD, text="Run", font=("SansSerif", 14), command=self.start_change_detection)
         self.btnViewReport = Button(self.frameCD, text="View Report", font=("SansSerif", 14), command=self.view_change_detection_report)
         self.btnViewReport.configure(state=DISABLED)
+        self.btnViewImgDiff = Button(self.frameCD, text="View Difference Image", font=("SansSerif", 14), command=self.draw_image_difference)
+        self.btnViewImgDiff.configure(state=DISABLED)
+
+
+        self.entryProgCD = Entry(self.frameCD, width=0, font=("SansSerif", 12), bg="green")
+        self.labelProgCD = Label(self.frameCD, text="", font=("SansSerif", 12, "bold"))
 
         labelHeader.grid(row=0, column=1, sticky=N, pady=25, padx=15)
         labelInitial.grid(row=1, column=0, sticky=W, pady=12, padx=5)
@@ -590,6 +655,9 @@ class ImageOperations(DGISTMainWindow):
         btnChooseImgDiff.grid(row=3, column=2, sticky=W, pady=12, padx=5)
         btnRun.grid(row=5, column=1, sticky=S, pady=12)
         self.btnViewReport.grid(row=5, column=1, sticky=E, pady=12)
+        self.btnViewImgDiff.grid(row=5, column=1, sticky=W, pady=12)
+        self.labelProgCD.grid(row=6, column=1, sticky=S, pady=2)
+        self.entryProgCD.grid(row=7, column=1, sticky=W, pady=2)
 
         self.rootCD.mainloop()
 
@@ -600,30 +668,27 @@ class ImageOperations(DGISTMainWindow):
         self.frameTC = Frame(self.rootTC)
         self.frameTC.pack()
 
-        labelHeader = Label(self.frameTC, text="Trend Calculator", font=("SansSerif", 20, "bold"))
+        self.labelHeader = Label(self.frameTC, text="Trend Calculator", font=("SansSerif", 20, "bold"))
 
         labelImage1 = Label(self.frameTC, text="Image for Date 1", font=("SansSerif", 12))
         labelImage2 = Label(self.frameTC, text="Image for Date 2", font=("SansSerif", 12))
         labelImage3 = Label(self.frameTC, text="Image for Date 3", font=("SansSerif", 12))
         labelImage4 = Label(self.frameTC, text="Image for Date 4", font=("SansSerif", 12))
         labelImage5 = Label(self.frameTC, text="Image for Date 5", font=("SansSerif", 12))
-        labelImage6 = Label(self.frameTC, text="Image for Date 6", font=("SansSerif", 12))
 
         self.entryImage1 = Entry(self.frameTC, width=70, font=("SansSerif", 12))
         self.entryImage2 = Entry(self.frameTC, width=70, font=("SansSerif", 12))
         self.entryImage3 = Entry(self.frameTC, width=70, font=("SansSerif", 12))
         self.entryImage4 = Entry(self.frameTC, width=70, font=("SansSerif", 12))
         self.entryImage5 = Entry(self.frameTC, width=70, font=("SansSerif", 12))
-        self.entryImage6 = Entry(self.frameTC, width=70, font=("SansSerif", 12))
 
         btnChooseImage1 = Button(self.frameTC, text="Choose", font=("SansSerif", 12), command=self.select_image1_path)
         btnChooseImage2 = Button(self.frameTC, text="Choose", font=("SansSerif", 12), command=self.select_image2_path)
         btnChooseImage3 = Button(self.frameTC, text="Choose", font=("SansSerif", 12), command=self.select_image3_path)
         btnChooseImage4 = Button(self.frameTC, text="Choose", font=("SansSerif", 12), command=self.select_image4_path)
         btnChooseImage5 = Button(self.frameTC, text="Choose", font=("SansSerif", 12), command=self.select_image5_path)
-        btnChooseImage6 = Button(self.frameTC, text="Choose", font=("SansSerif", 12), command=self.select_image6_path)
 
-        btnRun = Button(self.frameTC, text="Run", font=("SansSerif", 14), command=self.run_trend_calculator)
+        self.btnRun = Button(self.frameTC, text="Run", font=("SansSerif", 14), command=self.start_trend_calculator)
 
         self.btnViewTrend = Button(self.frameTC, text="View Trend", font=("SansSerif", 14), command=self.view_trend)
         self.btnViewTrend.configure(state=DISABLED)
@@ -631,33 +696,35 @@ class ImageOperations(DGISTMainWindow):
         self.btnPlotTrend = Button(self.frameTC, text="Plot Trend", font=("SansSerif", 14), command=self.plot_trend)
         self.btnPlotTrend.configure(state=DISABLED)
 
-        labelHeader.grid(row=0, column=1, sticky=N, pady=25, padx=15)
+        self.entryProgTrend = Entry(self.frameTC, width=0, font=("SansSerif", 12), bg="green", state=DISABLED)
+        self.labelProgTrend = Label(self.frameTC, text="", font=("SansSerif", 12, "bold"))
+
+        self.labelHeader.grid(row=0, column=1, sticky=N, pady=25, padx=15)
 
         labelImage1.grid(row=1, column=0, sticky=W, pady=12, padx=5)
         labelImage2.grid(row=2, column=0, sticky=W, pady=12, padx=5)
         labelImage3.grid(row=3, column=0, sticky=W, pady=12, padx=5)
         labelImage4.grid(row=4, column=0, sticky=W, pady=12, padx=5)
         labelImage5.grid(row=5, column=0, sticky=W, pady=12, padx=5)
-        labelImage6.grid(row=6, column=0, sticky=W, pady=12, padx=5)
-
 
         self.entryImage1.grid(row=1, column=1, sticky=W, pady=12, padx=5)
         self.entryImage2.grid(row=2, column=1, sticky=W, pady=12, padx=5)
         self.entryImage3.grid(row=3, column=1, sticky=W, pady=12, padx=5)
         self.entryImage4.grid(row=4, column=1, sticky=W, pady=12, padx=5)
         self.entryImage5.grid(row=5, column=1, sticky=W, pady=12, padx=5)
-        self.entryImage6.grid(row=6, column=1, sticky=W, pady=12, padx=5)
 
         btnChooseImage1.grid(row=1, column=2, sticky=W, pady=12, padx=5)
         btnChooseImage2.grid(row=2, column=2, sticky=W, pady=12, padx=5)
         btnChooseImage3.grid(row=3, column=2, sticky=W, pady=12, padx=5)
         btnChooseImage4.grid(row=4, column=2, sticky=W, pady=12, padx=5)
         btnChooseImage5.grid(row=5, column=2, sticky=W, pady=12, padx=5)
-        btnChooseImage6.grid(row=6, column=2, sticky=W, pady=12, padx=5)
 
-        btnRun.grid(row=8, column=1, sticky=S, pady=12)
-        self.btnViewTrend.grid(row=8, column=1, sticky=E, pady=12)
-        self.btnPlotTrend.grid(row=8, column=1, sticky=W, pady=12)
+        self.btnRun.grid(row=6, column=1, sticky=S, pady=12)
+        self.btnViewTrend.grid(row=6, column=1, sticky=E, pady=12)
+        self.btnPlotTrend.grid(row=6, column=1, sticky=W, pady=12)
+
+        self.labelProgTrend.grid(row=7, column=1, sticky=S, pady=2)
+        self.entryProgTrend.grid(row=8, column=1, sticky=W, pady=2)
 
         self.rootTC.mainloop()
 

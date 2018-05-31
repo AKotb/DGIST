@@ -32,7 +32,7 @@ class DGISTMainWindow(QMainWindow):
     def histogram(self):
         from src.operations import ImageOperations
         imgopt = ImageOperations.ImageOperations()
-        imgopt.histogram(self, self.imgpath)
+        imgopt.histogram2(self, self.imgpath)
 
     def changeDetection(self):
         from src.operations import ImageOperations
